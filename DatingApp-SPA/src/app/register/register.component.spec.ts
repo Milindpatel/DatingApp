@@ -1,28 +1,15 @@
-/* tslint:disable:no-unused-variable */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { DebugElement } from '@angular/core';
+import { FormControl, FormGroup } from '@angular/forms';
+import { passwordMatchValidator } from './register.component';
 
-import { RegisterComponent } from './register.component';
+describe('passwordMatchValidator', () => {
+  const group = (password: string, confirmPassword: string) =>
+    new FormGroup({ password: new FormControl(password), confirmPassword: new FormControl(confirmPassword) });
 
-describe('RegisterComponent', () => {
-  let component: RegisterComponent;
-  let fixture: ComponentFixture<RegisterComponent>;
-
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      declarations: [ RegisterComponent ]
-    })
-    .compileComponents();
-  }));
-
-  beforeEach(() => {
-    fixture = TestBed.createComponent(RegisterComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+  it('passes when passwords match', () => {
+    expect(passwordMatchValidator(group('secret123', 'secret123'))).toBeNull();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('flags a mismatch', () => {
+    expect(passwordMatchValidator(group('secret123', 'secret124'))).toEqual({ mismatch: true });
   });
 });

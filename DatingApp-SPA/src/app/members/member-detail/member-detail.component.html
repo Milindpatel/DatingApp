@@ -1,61 +1,53 @@
 <div class="container mt-4">
-  <div class="row">
-    <h1>{{user.knownAs}}'s Profile</h1>
-  </div>
+  <h1>{{ user().knownAs }}'s profile</h1>
   <div class="row">
     <div class="col-sm-4">
       <div class="card">
-        <img class="card-img-top img-thumbnail" src="{{user.photoUrl || '../../../assets/user.png'}}" alt="{{user.knownAs}}">
+        <img class="card-img-top img-thumbnail" [src]="user().photoUrl || defaultPhoto" [alt]="user().knownAs" />
         <div class="card-body">
-          <div>
-            <strong>Location:</strong>
-            <p>{{user.city}} {{user.country}}</p>
-          </div>
-          <div>
-            <strong>Age:</strong>
-            <p>{{user.age}} </p>
-          </div>
-          <div>
-            <strong>Last Active:</strong>
-            <p>{{user.lastActive}} </p>
-          </div>
-          <div>
-            <strong>Member Since:</strong>
-            <p>{{user.created}} </p>
-          </div>
+          <strong>Location:</strong>
+          <p>{{ user().city }}, {{ user().country }}</p>
+          <strong>Age:</strong>
+          <p>{{ user().age }}</p>
+          <strong>Last active:</strong>
+          <p>{{ user().lastActive | date: 'medium' }}</p>
+          <strong>Member since:</strong>
+          <p>{{ user().created | date: 'longDate' }}</p>
         </div>
         <div class="card-footer">
           <div class="btn-group d-flex">
-            <button class="btn btn-primary w-100">
-              Like
-            </button>
-            <button class="btn btn-success w-100">
-              Message
-            </button>
+            <button type="button" class="btn btn-primary w-100">Like</button>
+            <button type="button" class="btn btn-success w-100">Message</button>
           </div>
         </div>
       </div>
     </div>
     <div class="col-sm-8">
-      <div class="tab-panel">
-        <tabset class="member-tabset">
-          <tab heading="About {{user.knownAs}}">
+      <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item"><button type="button" role="tab" class="nav-link" [class.active]="tab() === 'about'" [attr.aria-selected]="tab() === 'about'" (click)="tab.set('about')">About {{ user().knownAs }}</button></li>
+        <li class="nav-item"><button type="button" role="tab" class="nav-link" [class.active]="tab() === 'interests'" [attr.aria-selected]="tab() === 'interests'" (click)="tab.set('interests')">Interests</button></li>
+        <li class="nav-item"><button type="button" role="tab" class="nav-link" [class.active]="tab() === 'photos'" [attr.aria-selected]="tab() === 'photos'" (click)="tab.set('photos')">Photos</button></li>
+        <li class="nav-item"><button type="button" role="tab" class="nav-link" [class.active]="tab() === 'messages'" [attr.aria-selected]="tab() === 'messages'" (click)="tab.set('messages')">Messages</button></li>
+      </ul>
+      <div class="tab-panel border border-top-0 p-3" role="tabpanel">
+        @switch (tab()) {
+          @case ('about') {
             <h4>Description</h4>
-            <p>{{user.introduction}}</p>
-            <h4>Looking For</h4>
-            <p>{{user.lookingFor}}</p>
-          </tab>
-          <tab heading="Interests">
+            <p>{{ user().introduction }}</p>
+            <h4>Looking for</h4>
+            <p>{{ user().lookingFor }}</p>
+          }
+          @case ('interests') {
             <h4>Interests</h4>
-            <p>{{user.interests}}</p>
-          </tab>
-          <tab heading="Photos">
-            <ngx-gallery [options]="galleryOptions" [images]="galleryImages"></ngx-gallery>
-          </tab>
-          <tab heading="messages">
-            <p>Messages will go here</p>
-          </tab>
-        </tabset>
+            <p>{{ user().interests }}</p>
+          }
+          @case ('photos') {
+            <app-photo-gallery [photos]="user().photos ?? []" />
+          }
+          @case ('messages') {
+            <p class="text-muted">Messages will go here.</p>
+          }
+        }
       </div>
     </div>
   </div>

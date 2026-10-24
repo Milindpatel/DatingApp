@@ -1,46 +1,26 @@
-import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpErrorResponse, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { catchError, throwError } from 'rxjs';
 
-@Injectable()
-export class ErrorInterceptor implements HttpInterceptor {
-  intercept(
-    req: import('@angular/common/http').HttpRequest<any>,
-    next: import('@angular/common/http').HttpHandler
-  ): import('rxjs').Observable<import('@angular/common/http').HttpEvent<any>> {
-    return next.handle(req).pipe(
-      catchError(error => {
-        if (error.status === 401) {
-          return throwError(error.statusText);
-        }
-        if (error instanceof HttpErrorResponse) {
-          const applicationError = error.headers.get('Application-Error');
-          if (applicationError) {
-            console.log(applicationError);
-            return throwError(applicationError);
-          }
+/** Turns an HTTP error into a readable message string. Exported for tests. */
+export function toErrorMessage(error: unknown): string {
+  if (!(error instanceof HttpErrorResponse)) return 'Unexpected error';
+  if (error.status === 0) return 'Cannot reach the server';
+  if (error.status === 401) return 'Unauthorized';
 
-          const serverError = error.error;
-          let modalStateErrors = '';
-          if (serverError && typeof serverError === 'object') {
-            for (const key in serverError) {
-              if (serverError[key]) {
-                modalStateErrors += serverError[key] + '\n';
-              }
-            }
-          }
-          return throwError(modalStateErrors || serverError || 'Server Error');
-        }
-      })
-    );
+  const appError = error.headers.get('Application-Error');
+  if (appError) return appError;
+
+  const body = error.error;
+  if (typeof body === 'string' && body) return body;
+  if (body && typeof body === 'object') {
+    // ASP.NET Core validation problem: { errors: { Field: ['msg'] } }
+    const errors = (body as { errors?: Record<string, string[]> }).errors;
+    if (errors) return Object.values(errors).flat().join('\n');
+    const title = (body as { title?: string }).title;
+    if (title) return title;
   }
+  return 'Server error';
 }
 
-export const ErrorInterceptorProvider = {
-    provide: HTTP_INTERCEPTORS,
-    useClass: ErrorInterceptor,
-    multi: true
-};
-
-
+export const errorInterceptor: HttpInterceptorFn = (req, next) =>
+  next(req).pipe(catchError((error) => throwError(() => toErrorMessage(error))));

@@ -1,37 +1,44 @@
-import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpEvent } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { Photo } from '../_models/photo';
 import { User } from '../_models/user';
 
+export type UserUpdate = Pick<User, 'introduction' | 'lookingFor' | 'interests' | 'city' | 'country'>;
 
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class UserService {
-  baseUrl = environment.apiUrl;
-
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = environment.apiUrl;
 
   getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(this.baseUrl + 'users');
+    return this.http.get<User[]>(`${this.baseUrl}users`);
   }
 
-  getUser(id): Observable<User> {
-    return this.http.get<User>(this.baseUrl + 'users/' + id );
+  getUser(id: number): Observable<User> {
+    return this.http.get<User>(`${this.baseUrl}users/${id}`);
   }
 
-  updateUser(id: number, user: User) {
-    return this.http.put(this.baseUrl + 'users/' + id, user);
+  updateUser(id: number, user: UserUpdate): Observable<void> {
+    const { introduction, lookingFor, interests, city, country } = user;
+    return this.http.put<void>(`${this.baseUrl}users/${id}`, { introduction, lookingFor, interests, city, country });
   }
 
-  setMainPhoto(userId: number, id: number) {
-    return this.http.
-    post(this.baseUrl + "users/" + userId + "/photos/" + id + "/setMain", {});
+  uploadPhoto(userId: number, file: File): Observable<HttpEvent<Photo>> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+    return this.http.post<Photo>(`${this.baseUrl}users/${userId}/photos`, body, {
+      reportProgress: true,
+      observe: 'events',
+    });
   }
 
-  deletePhoto(userId: number, id: number) {
-    return this.http.delete(this.baseUrl + "users/" + userId + "/photos/" + id);
+  setMainPhoto(userId: number, id: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}users/${userId}/photos/${id}/setMain`, {});
+  }
+
+  deletePhoto(userId: number, id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}users/${userId}/photos/${id}`);
   }
 }

@@ -1,79 +1,68 @@
-import { Component, OnInit, Input, Output, EventEmitter } from "@angular/core";
-import { AuthService } from "../_services/auth.service";
-import { AlertifyService } from "../_services/alertify.service";
-import { FormGroup, FormControl, Validators, FormBuilder } from "@angular/forms";
-import { BsDatepickerConfig } from 'ngx-bootstrap';
-import { User } from '../_models/user';
+import { NgClass } from '@angular/common';
+import { Component, inject, output } from '@angular/core';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { switchMap } from 'rxjs';
+import { RegisterRequest } from '../_models/user';
+import { AlertifyService } from '../_services/alertify.service';
+import { AuthService } from '../_services/auth.service';
+
+export function passwordMatchValidator(group: AbstractControl): ValidationErrors | null {
+  return group.get('password')?.value === group.get('confirmPassword')?.value ? null : { mismatch: true };
+}
+
+/** Latest birth date allowed: members must be 18+. */
+function maxBirthDate(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return d.toISOString().slice(0, 10);
+}
 
 @Component({
-  selector: "app-register",
-  templateUrl: "./register.component.html",
-  styleUrls: ["./register.component.css"]
+  selector: 'app-register',
+  imports: [ReactiveFormsModule, NgClass],
+  templateUrl: './register.component.html',
 })
-export class RegisterComponent implements OnInit {
-  @Input() valuesFromHome: any;
-  @Output() cancelRegister = new EventEmitter();
-  user: User;
-  registerForm: FormGroup;
-  bsConfig: Partial<BsDatepickerConfig>;
+export class RegisterComponent {
+  private readonly authService = inject(AuthService);
+  private readonly alertify = inject(AlertifyService);
+  private readonly router = inject(Router);
 
-  constructor(
-    private authService: AuthService,
-    private alertify: AlertifyService,
-    private router: Router,
-    private fb: FormBuilder
-  ) {}
+  readonly cancelRegister = output<void>();
+  readonly maxDate = maxBirthDate();
 
-  ngOnInit() {
-    this.bsConfig = {
-      containerClass: 'theme-red'
-    },
-    this.createRegisterForm();
-  }
-
-  createRegisterForm() {
-    this.registerForm = this.fb.group({
+  readonly registerForm = inject(FormBuilder).nonNullable.group(
+    {
       gender: ['male'],
       username: ['', Validators.required],
       knownAs: ['', Validators.required],
-      dateOfBirth: [null, Validators.required],
+      dateOfBirth: ['', Validators.required],
       city: ['', Validators.required],
       country: ['', Validators.required],
-      password: ['', [Validators.required,
-        Validators.minLength(4),
-        Validators.maxLength(8)]],
-      confirmPassword: ['', Validators.required]
-    }, {validators: this.passwordMatchValidator});
+      password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(64)]],
+      confirmPassword: ['', Validators.required],
+    },
+    { validators: passwordMatchValidator },
+  );
+
+  invalid(name: string): boolean {
+    const control = this.registerForm.get(name);
+    return !!control && control.invalid && control.touched;
   }
 
-  passwordMatchValidator(g: FormGroup) {
-    return g.get('password').value === g.get('confirmPassword').value ? null : {'mismatch' : true};
-  }
-
-  register() {
-    if (this.registerForm.valid){
-      this.user = Object.assign({}, this.registerForm.value);
-      this.authService.register(this.user).subscribe(() => {
-        this.alertify.success('Registeration successful');
-      }, error => {
-        this.alertify.error(error);
-      }, () => {
-        this.authService.login(this.user).subscribe(() => {
+  register(): void {
+    if (this.registerForm.invalid) return;
+    const { confirmPassword: _, ...user } = this.registerForm.getRawValue();
+    const request: RegisterRequest = user;
+    this.authService
+      .register(request)
+      .pipe(switchMap(() => this.authService.login({ username: request.username, password: request.password })))
+      .subscribe({
+        next: () => {
+          this.alertify.success('Registration successful');
           this.router.navigate(['/members']);
-        });
+        },
+        error: (error: string) => this.alertify.error(error),
       });
-    }
-    // this.authService.register(this.model).subscribe(() => {
-    //   this.alertify.success('registeration successful');
-    // }, error => {
-    //   this.alertify.error(error);
-    // });
-    console.log(this.registerForm.value);
-  }
-
-  cancel() {
-    this.cancelRegister.emit(false);
-    console.log("cancelled");
   }
 }

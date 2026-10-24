@@ -1,25 +1,23 @@
-using System;
-using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace DatingApp.API.Helpers
 {
     public static class Extensions
     {
-        public static void AddApplicationError(this HttpResponse response, string message){
-            response.Headers.Add("Application-Error", message);
-            response.Headers.Add("Access-Control-Expose-Headers", "Application-Error");
-            response.Headers.Add("Access-Control-Allow-Origin", "*");
-        }
+        public static int CalculateAge(this DateTime dateOfBirth) => dateOfBirth.CalculateAge(DateTime.Today);
 
-        public static int CalculateAge(this DateTime theDateTime)
+        public static int CalculateAge(this DateTime dateOfBirth, DateTime today)
         {
-            var age = DateTime.Today.Year - theDateTime.Year;
-            if(theDateTime.AddYears(age) > DateTime.Today)
+            var age = today.Year - dateOfBirth.Year;
+            if (dateOfBirth.Date.AddYears(age) > today.Date)
             {
                 age--;
             }
-
             return age;
         }
+
+        /// <summary>Id of the authenticated user, or 0 if the claim is missing.</summary>
+        public static int GetUserId(this ClaimsPrincipal user) =>
+            int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
     }
 }

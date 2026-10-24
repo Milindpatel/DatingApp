@@ -1,46 +1,46 @@
-import { Component, OnInit } from '@angular/core';
-import { AuthService } from '../_services/auth.service';
-import { ThrowStmt } from '@angular/compiler';
+import { TitleCasePipe } from '@angular/common';
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AlertifyService } from '../_services/alertify.service';
-import { Router } from '@angular/router';
+import { AuthService } from '../_services/auth.service';
 
 @Component({
   selector: 'app-nav',
+  imports: [FormsModule, RouterLink, RouterLinkActive, TitleCasePipe],
   templateUrl: './nav.component.html',
-  styleUrls: ['./nav.component.css']
+  styleUrl: './nav.component.css',
+  host: { '(document:click)': 'menuOpen.set(false)' },
 })
-export class NavComponent implements OnInit {
-  model: any = {};
-  photoUrl: string;
+export class NavComponent {
+  protected readonly authService = inject(AuthService);
+  private readonly alertify = inject(AlertifyService);
+  private readonly router = inject(Router);
 
-  constructor(public authService: AuthService,
-              private alertify: AlertifyService, private router: Router) { }
+  model = { username: '', password: '' };
+  readonly menuOpen = signal(false);
+  readonly navOpen = signal(false);
 
-  ngOnInit() {
-    this.authService.currentPhotoUrl.subscribe(photoUrl => this.photoUrl = photoUrl);
-  }
-
-  login() {
-    this.authService.login(this.model).subscribe(next => {
-      this.alertify.success('Logged in Successfuly');
-    }, error => {
-      this.alertify.error(error);
-    }, () => {
-      this.router.navigate(['/members']);
+  login(): void {
+    this.authService.login(this.model).subscribe({
+      next: () => {
+        this.alertify.success('Logged in successfully');
+        this.model = { username: '', password: '' };
+        this.router.navigate(['/members']);
+      },
+      error: (error: string) => this.alertify.error(error),
     });
   }
 
-  loggedIn() {
-   return this.authService.loggedIn();
+  toggleMenu(event: Event): void {
+    event.stopPropagation();
+    this.menuOpen.update((open) => !open);
   }
 
-  logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    this.authService.decodedToken = null;
-    this.authService.currentUser = null;
-    this.alertify.message('logged out');
-    this.router.navigate(['/home']);
+  logout(): void {
+    this.authService.logout();
+    this.menuOpen.set(false);
+    this.alertify.message('Logged out');
+    this.router.navigate(['/']);
   }
-
 }

@@ -1,72 +1,65 @@
 <div class="container mt-4">
   <div class="row">
     <div class="col-sm-4">
-        <h1>Your Profile</h1>
+      <h1>Your profile</h1>
     </div>
     <div class="col-sm-8">
-      <div *ngIf="editForm.dirty" class="alert alert-info">
-        <strong>Information:</strong> You have made changes.  Any unsaved changes will be lost!
-      </div>
+      @if (hasUnsavedChanges()) {
+        <div class="alert alert-info">
+          <strong>Information:</strong> You have made changes. Any unsaved changes will be lost!
+        </div>
+      }
     </div>
   </div>
   <div class="row">
     <div class="col-sm-4">
       <div class="card">
-        <img class="card-img-top img-thumbnail" src="{{photoUrl || '../../../assets/user.png'}}" alt="{{user.knownAs}}">
+        <img class="card-img-top img-thumbnail" [src]="authService.photoUrl()" [alt]="model().knownAs" />
         <div class="card-body">
-          <div>
-            <strong>Location:</strong>
-            <p>{{user.city}}, {{user.country}}</p>
-          </div>
-          <div>
-            <strong>Age:</strong>
-            <p>{{user.age}}</p>
-          </div>
-          <div>
-            <strong>Last Active:</strong>
-            <p>{{user.lastActive}}</p>
-          </div>
-          <div>
-            <strong>Member Since:</strong>
-            <p>{{user.created}}</p>
-          </div>
+          <strong>Location:</strong>
+          <p>{{ model().city }}, {{ model().country }}</p>
+          <strong>Age:</strong>
+          <p>{{ model().age }}</p>
+          <strong>Last active:</strong>
+          <p>{{ model().lastActive | date: 'medium' }}</p>
+          <strong>Member since:</strong>
+          <p>{{ model().created | date: 'longDate' }}</p>
         </div>
-        <div class="card-footer">
-            <button [disabled]="!editForm.dirty" form="editForm" class="btn btn-success btn-block">Save Changes</button>
+        <div class="card-footer d-grid">
+          <button type="submit" [disabled]="!hasUnsavedChanges()" form="editForm" class="btn btn-success">Save changes</button>
         </div>
       </div>
     </div>
     <div class="col-sm-8">
-      <div class="tab-panel">
-        <tabset class="member-tabset">
-          <tab heading="Edit Profile">
-
-            <form #editForm="ngForm" (ngSubmit)="updateUser()" id="editForm">
-                <h4>Description</h4>
-                <textarea class="form-control" name="introduction" rows="6" 
-                  [(ngModel)]="user.introduction"></textarea>
-                <h4>Looking For</h4>
-                <textarea class="form-control" name="lookingFor" rows="6" 
-                  [(ngModel)]="user.lookingFor"></textarea>
-                  <h4>Interests</h4>
-                  <textarea class="form-control" name="interests" rows="6" 
-                    [(ngModel)]="user.interests"></textarea>
-                  <h4>Location Details:</h4>
-                <div class="form-inline">
-                  <label for="city">City</label>
-                  <input type="text" class="form-control" name="city" [(ngModel)]="user.city">
-                  <label for="country">City</label>
-                  <input type="text" class="form-control" name="country" [(ngModel)]="user.country">
-                </div>
-
-            </form>
-
-          </tab>
-          <tab heading="Edit Photos">
-            <app-photo-editor [photos]="user.photos" (getMemberPhotoChange)="updateMainPhoto($event)"></app-photo-editor>
-          </tab>
-        </tabset>
+      <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item"><button type="button" role="tab" class="nav-link" [class.active]="tab() === 'profile'" [attr.aria-selected]="tab() === 'profile'" (click)="tab.set('profile')">Edit profile</button></li>
+        <li class="nav-item"><button type="button" role="tab" class="nav-link" [class.active]="tab() === 'photos'" [attr.aria-selected]="tab() === 'photos'" (click)="tab.set('photos')">Edit photos</button></li>
+      </ul>
+      <div class="border border-top-0 p-3" role="tabpanel">
+        <!-- The form stays in the DOM so unsaved edits survive switching tabs. -->
+        <form #editForm="ngForm" (ngSubmit)="updateUser()" id="editForm" [hidden]="tab() !== 'profile'">
+          <label class="form-label h5" for="introduction">Description</label>
+          <textarea id="introduction" class="form-control mb-3" name="introduction" rows="6" [(ngModel)]="model().introduction"></textarea>
+          <label class="form-label h5" for="lookingFor">Looking for</label>
+          <textarea id="lookingFor" class="form-control mb-3" name="lookingFor" rows="6" [(ngModel)]="model().lookingFor"></textarea>
+          <label class="form-label h5" for="interests">Interests</label>
+          <textarea id="interests" class="form-control mb-3" name="interests" rows="6" [(ngModel)]="model().interests"></textarea>
+          <h5>Location details</h5>
+          <div class="row g-2">
+            <div class="col-sm-6">
+              <label class="form-label" for="city">City</label>
+              <input id="city" type="text" class="form-control" name="city" [(ngModel)]="model().city" />
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label" for="country">Country</label>
+              <input id="country" type="text" class="form-control" name="country" [(ngModel)]="model().country" />
+            </div>
+          </div>
+        </form>
+        @if (tab() === 'photos') {
+          <app-photo-editor [photos]="model().photos ?? []" />
+        }
       </div>
     </div>
   </div>
-</div> 
+</div>

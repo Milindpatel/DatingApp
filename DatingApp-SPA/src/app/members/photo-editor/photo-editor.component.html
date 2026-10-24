@@ -1,77 +1,62 @@
 <div class="row">
-    <div class="col-sm-2 mt-2" *ngFor="let photo of photos">
-        <img src="{{photo.url}}" class="img-thumbnail p-1" alt="">
-        <div class="text-center">
-            <button type="button" class="btn btn-sm mr-1" (click)="setMainPhoto(photo)"
-                [ngClass]="photo.isMain ? 'btn-success active' : 'btn-secondary'"
-                [disabled]="photo.isMain">Main</button>
-            <button type="button" class="btn btn-sm btn-danger" (click)="deletePhoto(photo.id)"
-                [disabled]="photo.isMain"><i class="fa fa-trash-o"></i></button>
-        </div>
+  @for (photo of list(); track photo.id) {
+    <div class="col-sm-3 col-lg-2 mt-2">
+      <img [src]="photo.url" class="img-thumbnail p-1" [alt]="photo.description || 'Photo'" />
+      <div class="text-center">
+        <button type="button" class="btn btn-sm me-1" (click)="setMainPhoto(photo)"
+          [class]="photo.isMain ? 'btn-success active' : 'btn-secondary'" [disabled]="photo.isMain">Main</button>
+        <button type="button" class="btn btn-sm btn-danger" (click)="deletePhoto(photo.id)" [disabled]="photo.isMain"
+          aria-label="Delete photo"><i class="fa-regular fa-trash-can"></i></button>
+      </div>
     </div>
+  } @empty {
+    <p class="text-muted">You have no photos yet.</p>
+  }
 </div>
 
 <div class="row mt-3">
-
-    <div class="col-md-3">
-
-        <h3>Add Photos</h3>
-
-        <div ng2FileDrop [ngClass]="{'nv-file-over': hasBaseDropZoneOver}" (fileOver)="fileOverBase($event)"
-            [uploader]="uploader" class="card bg-faded p-3 text-center mb-3 my-drop-zone">
-            <i class="fa fa-upload fa-3x"></i>
-            Drop Photos here
-        </div>
-
-
-        Multiple
-        <input type="file" ng2FileSelect [uploader]="uploader" multiple /><br />
-
-        Single
-        <input type="file" ng2FileSelect [uploader]="uploader" />
+  <div class="col-md-3">
+    <h3>Add photos</h3>
+    <div class="card p-3 text-center mb-3 drop-zone" [class.over]="dropZoneOver()"
+      (dragover)="onDragOver($event)" (dragleave)="dropZoneOver.set(false)" (drop)="onDrop($event)">
+      <i class="fa-solid fa-upload fa-3x"></i>
+      Drop photos here
     </div>
+    <label class="form-label" for="photoInput">Or choose files</label>
+    <input id="photoInput" class="form-control" type="file" accept="image/*" multiple (change)="onFileInput($event)" />
+  </div>
 
-    <div class="col-md-9" style="margin-bottom: 40px" *ngIf="uploader?.queue?.length">
-
-        <h3>Upload queue</h3>
-        <p>Queue length: {{ uploader?.queue?.length }}</p>
-
-        <table class="table">
-            <thead>
-                <tr>
-                    <th width="50%">Name</th>
-                    <th>Size</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let item of uploader.queue">
-                    <td><strong>{{ item?.file?.name }}</strong></td>
-                    <td *ngIf="uploader.options.isHTML5" nowrap>{{ item?.file?.size/1024/1024 | number:'.2' }} MB</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div>
-            <div>
-                Queue progress:
-                <div class="progress mb-4">
-                    <div class="progress-bar" role="progressbar" [ngStyle]="{ 'width': uploader.progress + '%' }"></div>
-                </div>
-            </div>
-            <button type="button" class="btn btn-success btn-s mr-2" (click)="uploader.uploadAll()"
-                [disabled]="!uploader.getNotUploadedItems().length">
-                <span class="fa fa-upload"></span> Upload
-            </button>
-            <button type="button" class="btn btn-warning btn-s mr-2" (click)="uploader.cancelAll()"
-                [disabled]="!uploader.isUploading">
-                <span class="fa fa-ban"></span> Cancel
-            </button>
-            <button type="button" class="btn btn-danger btn-s" (click)="uploader.clearQueue()"
-                [disabled]="!uploader.queue.length">
-                <span class="fa fa-trash"></span> Remove
-            </button>
+  @if (queue().length) {
+    <div class="col-md-9 mb-5">
+      <h3>Upload queue</h3>
+      <p>{{ queue().length }} file(s), {{ queueSize() / 1024 / 1024 | number: '1.2-2' }} MB</p>
+      <table class="table">
+        <thead>
+          <tr><th class="w-50">Name</th><th>Size</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (file of queue(); track $index) {
+            <tr>
+              <td><strong>{{ file.name }}</strong></td>
+              <td class="text-nowrap">{{ file.size / 1024 / 1024 | number: '1.2-2' }} MB</td>
+              <td>
+                <button type="button" class="btn btn-sm btn-link" [disabled]="uploading()" (click)="removeFromQueue($index)">Remove</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (uploading()) {
+        <div class="progress mb-3" role="progressbar" [attr.aria-valuenow]="progress()" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar" [style.width.%]="progress()"></div>
         </div>
-
+      }
+      <button type="button" class="btn btn-success me-2" (click)="uploadAll()" [disabled]="uploading()">
+        <i class="fa-solid fa-upload"></i> Upload
+      </button>
+      <button type="button" class="btn btn-danger" (click)="clearQueue()" [disabled]="uploading()">
+        <i class="fa-solid fa-trash"></i> Clear
+      </button>
     </div>
-
+  }
 </div>

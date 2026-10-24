@@ -1,41 +1,27 @@
-using System.Collections.Generic;
-using System.Linq;
+using System.Text.Json;
 using DatingApp.API.Models;
-using Newtonsoft.Json;
 
 namespace DatingApp.API.Data
 {
-    public class Seed
+    public static class Seed
     {
-        public static void SeedUsers(DataContext context)
+        /// <summary>Adds demo users (password: "password") to an empty database.</summary>
+        public static void SeedUsers(DataContext context, string seedFile)
         {
-            if (!context.Users.Any())
+            if (context.Users.Any())
+                return;
+
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var users = JsonSerializer.Deserialize<List<User>>(File.ReadAllText(seedFile), options) ?? [];
+
+            foreach (var user in users)
             {
-                var userData = System.IO.File.ReadAllText("Data/UserSeedData.json");
-                var users = JsonConvert.DeserializeObject<List<User>>(userData);
-                foreach (var user in users)
-                {
-                    byte[] passwordhash, passwordSalt;
-                    CreatePasswordHash("password", out passwordhash, out passwordSalt);
-
-                    user.PasswordHash = passwordhash;
-                    user.PasswordSalt = passwordSalt;
-                    user.Username = user.Username.ToLower();
-                    context.Users.Add(user);
-                }
-
-                context.SaveChanges();
-
+                (user.PasswordHash, user.PasswordSalt) = PasswordHasher.Hash("password");
+                user.Username = user.Username.ToLowerInvariant();
+                context.Users.Add(user);
             }
-        }
 
-        private static void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
-        {
-            using(var hmac = new System.Security.Cryptography.HMACSHA512())
-            {
-                passwordSalt = hmac.Key;
-                passwordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-            }
+            context.SaveChanges();
         }
     }
 }

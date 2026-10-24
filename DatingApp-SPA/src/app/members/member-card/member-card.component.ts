@@ -1,17 +1,15 @@
-import { Component, OnInit, Input } from '@angular/core';
-import { User } from 'src/app/_models/user';
+import { Component, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { User } from '../../_models/user';
+import { DEFAULT_PHOTO } from '../../_services/auth.service';
 
 @Component({
   selector: 'app-member-card',
+  imports: [RouterLink],
   templateUrl: './member-card.component.html',
-  styleUrls: ['./member-card.component.css']
+  styleUrl: './member-card.component.css',
 })
-export class MemberCardComponent implements OnInit {
-  @Input() user: User;
-
-  constructor() { }
-
-  ngOnInit() {
-  }
-
+export class MemberCardComponent {
+  readonly user = input.required<User>();
+  protected readonly defaultPhoto = DEFAULT_PHOTO;
 }

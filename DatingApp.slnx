@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DatingApp.API/DatingApp.API.csproj" />
+  <Project Path="DatingApp.API.Tests/DatingApp.API.Tests.csproj" />
+</Solution>

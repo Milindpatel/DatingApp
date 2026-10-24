@@ -1,57 +1,46 @@
-import { Component, OnInit, ViewChild, HostListener } from "@angular/core";
-import { User } from "src/app/_models/user";
-import { ActivatedRoute } from "@angular/router";
-import { AlertifyService } from "src/app/_services/alertify.service";
-import { viewClassName } from "@angular/compiler";
-import { NgForm } from "@angular/forms";
-import { UserService } from "src/app/_services/user.service";
-import { AuthService } from "src/app/_services/auth.service";
+import { DatePipe } from '@angular/common';
+import { Component, inject, input, linkedSignal, signal, viewChild } from '@angular/core';
+import { FormsModule, NgForm } from '@angular/forms';
+import { User } from '../../_models/user';
+import { AlertifyService } from '../../_services/alertify.service';
+import { AuthService } from '../../_services/auth.service';
+import { UserService } from '../../_services/user.service';
+import { PhotoEditorComponent } from '../photo-editor/photo-editor.component';
 
 @Component({
-  selector: "app-member-edit",
-  templateUrl: "./member-edit.component.html",
-  styleUrls: ["./member-edit.component.css"]
+  selector: 'app-member-edit',
+  imports: [DatePipe, FormsModule, PhotoEditorComponent],
+  templateUrl: './member-edit.component.html',
+  styleUrl: './member-edit.component.css',
+  host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
-export class MemberEditComponent implements OnInit {
-  @ViewChild("editForm", { static: true }) editForm: NgForm;
-  user: User;
-  photoUrl: string;
+export class MemberEditComponent {
+  private readonly alertify = inject(AlertifyService);
+  private readonly userService = inject(UserService);
+  protected readonly authService = inject(AuthService);
 
-  @HostListener("window: beforeunload", ["$event"])
-  unloadNotification($event: any) {
-    if (this.editForm.dirty) {
-      $event.returnValue = true;
-    }
+  /** Bound from the route resolver. */
+  readonly user = input.required<User>();
+  /** Editable copy of the resolved user. */
+  readonly model = linkedSignal(() => ({ ...this.user() }));
+  readonly tab = signal<'profile' | 'photos'>('profile');
+  readonly editForm = viewChild<NgForm>('editForm');
+
+  hasUnsavedChanges(): boolean {
+    return !!this.editForm()?.dirty;
   }
-  constructor(
-    private route: ActivatedRoute,
-    private alertify: AlertifyService,
-    private userService: UserService,
-    private authService: AuthService
-  ) {}
 
-  ngOnInit() {
-    this.route.data.subscribe(data => {
-      this.user = data["user"];
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges()) event.preventDefault();
+  }
+
+  updateUser(): void {
+    this.userService.updateUser(this.authService.userId, this.model()).subscribe({
+      next: () => {
+        this.alertify.success('Profile updated successfully');
+        this.editForm()?.resetForm(this.model());
+      },
+      error: (error: string) => this.alertify.error(error),
     });
-    this.authService.currentPhotoUrl.subscribe(photoUrl => this.photoUrl = photoUrl);
-  }
-
-  updateUser() {
-    this.userService
-      .updateUser(this.authService.decodedToken.nameid, this.user)
-      .subscribe(
-        next => {
-          this.alertify.success("Profile updated successfully");
-          this.editForm.reset(this.user);
-        },
-        error => {
-          this.alertify.error(error);
-        }
-      );
-  }
-
-  updateMainPhoto(photoUrl) {
-    this.user.photoUrl = photoUrl;
   }
 }

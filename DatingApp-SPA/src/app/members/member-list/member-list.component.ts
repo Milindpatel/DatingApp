@@ -1,32 +1,25 @@
-import { Component, OnInit } from '@angular/core';
-import { User } from 'src/app/_models/user';
-import { UserService } from 'src/app/_services/user.service';
-import { AlertifyService } from 'src/app/_services/alertify.service';
-import { ActivatedRoute } from '@angular/router';
+import { Component, input } from '@angular/core';
+import { User } from '../../_models/user';
+import { MemberCardComponent } from '../member-card/member-card.component';
 
 @Component({
   selector: 'app-member-list',
-  templateUrl: './member-list.component.html',
-  styleUrls: ['./member-list.component.css']
+  imports: [MemberCardComponent],
+  template: `
+    <div class="container mt-5">
+      <div class="row">
+        @for (user of users(); track user.id) {
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <app-member-card [user]="user" />
+          </div>
+        } @empty {
+          <p class="text-muted">No matches yet.</p>
+        }
+      </div>
+    </div>
+  `,
 })
-export class MemberListComponent implements OnInit {
-  users: User[];
-
-  constructor(private userService: UserService, private alertify: AlertifyService, private route: ActivatedRoute) { }
-
-  ngOnInit() {
-    this.route.data.subscribe(data => {
-      this.users = data.users;
-    });
-  }
-
-  // loadUsers() {
-  //   this.userService.getUsers().subscribe((users: User[]) => {
-  //     this.users = users;
-  //   }, error => {
-  //     console.log(error);
-  //     this.alertify.error(error);
-  //   });
-  // }
-
+export class MemberListComponent {
+  /** Bound from the route resolver. */
+  readonly users = input<User[]>([]);
 }
