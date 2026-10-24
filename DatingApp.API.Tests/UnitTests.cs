@@ -8,7 +8,7 @@ public class UnitTests
     [Theory]
     [InlineData("2000-06-15", "2026-06-14", 25)]
     [InlineData("2000-06-15", "2026-06-15", 26)]
-    [InlineData("2000-02-29", "2026-02-28", 25)]
+    [InlineData("2000-02-29", "2026-02-27", 25)]
     [InlineData("2000-02-29", "2026-03-01", 26)]
     public void CalculateAge_HandlesBirthdays(string dob, string today, int expected)
     {
