@@ -13,7 +13,7 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet build DatingApp.slnx
-      - run: dotnet test DatingApp.slnx --no-build
+      - run: dotnet test --solution DatingApp.slnx --no-build
 
   spa:
     runs-on: ubuntu-latest
