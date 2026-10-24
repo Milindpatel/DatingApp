@@ -53,7 +53,7 @@ npm start             # http://localhost:4200, talks to the API on :5000
 ## Tests
 
 ```bash
-dotnet test DatingApp.slnx          # API unit + integration tests
+dotnet test --solution DatingApp.slnx # API unit + integration tests
 cd DatingApp-SPA && npm test        # SPA unit tests
 ```
 

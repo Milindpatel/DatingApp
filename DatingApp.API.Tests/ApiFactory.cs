@@ -18,6 +18,8 @@ public class ApiFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Development");
         builder.UseSetting("ConnectionStrings:DefaultConnection", $"Data Source={_dbPath}");
+        builder.UseSetting("Logging:LogLevel:Default", "Warning");
+        builder.UseSetting("Logging:LogLevel:Microsoft.AspNetCore", "Warning");
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IPhotoStorage>();
